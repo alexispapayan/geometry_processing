@@ -54,8 +54,9 @@ using namespace nanogui;
 
 class Viewer : public nanogui::Screen {
 public:
-
+	void select_point(const Eigen::Vector2i & pixel);
     void refresh_mesh();
+	void refresh_selection();
     void refresh_trackball_center();
     Viewer();
     ~Viewer();

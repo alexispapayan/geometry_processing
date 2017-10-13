@@ -32,7 +32,9 @@ public:
     const surface_mesh::Point get_mesh_center() { return mesh_center_; }
     const float get_dist_max() { return dist_max_; }
     const Eigen::MatrixXf* get_points() { return &points_; }
+	Eigen::Vector3f get_closest_vertex(const Eigen::Vector3f & origin, const Eigen::Vector3f & direction);
 	const Eigen::MatrixXf* get_selection() { return &selection_; }
+	void set_selection(const Eigen::Vector3f & point) { selection_.col(0) = point; }
     const MatrixXu* get_indices() { return &indices_; }
     const Eigen::MatrixXf* get_normals() { return &normals_; }
     const Eigen::MatrixXf* get_colors_valence() { return &color_valence_; }
@@ -40,6 +42,7 @@ public:
     const Eigen::MatrixXf* get_colors_gaussian_curv() { return &color_gaussian_curv_; }
     const Eigen::MatrixXf* get_color_curvature() { return &color_curvature_; }
     const unsigned int get_number_of_face() { return mesh_.n_faces(); }
+	const unsigned int get_number_of_vertices() { return mesh_.n_vertices(); }
 
     void load_mesh(const string& filename);
     void compute_mesh_properties();

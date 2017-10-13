@@ -12,6 +12,20 @@
 //-----------------------------------------------------------------------------
 #include "viewer.h"
 
+void Viewer::select_point(const Eigen::Vector2i & pixel) {
+	Eigen::Matrix4f model, view, projection;
+	computeCameraMatrices(model, view, projection);
+	Matrix4f MVP = projection * view * model;
+	Matrix4f invMVP = MVP.inverse();
+
+	Eigen::Vector3f origin = nanogui::unproject(Eigen::Vector3f(pixel[0], pixel[1], 0), view * model, projection, mSize);
+	Eigen::Vector3f endpoint = nanogui::unproject(Eigen::Vector3f(pixel[0], pixel[1], 1), view * model, projection, mSize);
+	Eigen::Vector3f direction = (endpoint - origin) / (endpoint - origin).norm();
+
+	Eigen::Vector3f closest_vertex = mesh_->get_closest_vertex(origin, direction);
+	mesh_->set_selection(closest_vertex);
+}
+
 bool Viewer::keyboardEvent(int key, int scancode, int action, int modifiers) {
 	if (Screen::keyboardEvent(key, scancode, action, modifiers)) {
 		return true;
@@ -74,7 +88,7 @@ void Viewer::drawContents() {
 	if (wireframe_) {
 		glDisable(GL_POLYGON_OFFSET_FILL);
 		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-		colors << 0.0, 0.0, 0.0;
+		colors << 0.5, 0.7, 0.5;
 		shader_.setUniform("intensity", colors);
 		shader_.drawIndexed(GL_TRIANGLES, 0, mesh_->get_number_of_face());
 		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
@@ -85,6 +99,15 @@ void Viewer::drawContents() {
 		shaderNormals_.setUniform("MV", mv);
 		shaderNormals_.setUniform("P", p);
 		shaderNormals_.drawIndexed(GL_TRIANGLES, 0, mesh_->get_number_of_face());
+	}
+	selection_ = true;
+	if (selection_) {
+		shaderSelection_.bind();
+		shaderSelection_.setUniform("MV", mv);
+		shaderSelection_.setUniform("P", p);
+		glEnable(GL_PROGRAM_POINT_SIZE);
+		shaderSelection_.drawIndexed(GL_POINTS, 0, mesh_->get_number_of_face());
+		glDisable(GL_PROGRAM_POINT_SIZE);		
 	}
 }
 
@@ -97,6 +120,7 @@ bool Viewer::scrollEvent(const Vector2i &p, const Vector2f &rel) {
 
 bool Viewer::mouseMotionEvent(const Vector2i &p, const Vector2i &rel,
 	int button, int modifiers) {
+
 	if (!Screen::mouseMotionEvent(p, rel, button, modifiers)) {
 		if (camera_.arcball.motion(p)) {
 			//
@@ -131,6 +155,10 @@ bool Viewer::mouseButtonEvent(const Vector2i &p, int button, bool down, int modi
 			camera_.modelTranslation_start = camera_.modelTranslation;
 			translate_ = true;
 			translateStart_ = p;
+		}
+		else if (button == GLFW_MOUSE_BUTTON_1 && modifiers == GLFW_MOD_CONTROL) {
+			select_point(Eigen::Vector2i(p.x(), mSize.y() - p.y()));
+			refresh_selection();
 		}
 	}
 	if (button == GLFW_MOUSE_BUTTON_1 && !down) {
@@ -271,6 +299,26 @@ void Viewer::initShaders() {
 		"   createline(1);\n"
 		"   createline(2);\n"
 		"}"
+	);
+
+	shaderSelection_.init(
+	"selection_shader",
+
+	"#version 330\n"
+	"in vec3 position;\n"
+	"uniform mat4 MV;\n"
+	"uniform mat4 P;\n"
+	"void main() {\n"
+	"    vec4 vpoint_mv = MV * vec4(position, 1.0);\n"
+	"    gl_Position = P * vpoint_mv;\n"
+	"    gl_PointSize = 10.0;\n"
+	"}",
+
+	"#version 330\n"
+	"out vec4 color;\n"
+	"void main() {\n"
+	"    color = vec4(0.7, 0.0, 0.2, 1.0);\n"
+	"}"
 	);
 }
 
@@ -437,7 +485,7 @@ Viewer::Viewer() : nanogui::Screen(Eigen::Vector2i(1024, 768), "DGP Viewer") {
 	performLayout();
 
 	initShaders();
-	mesh_ = new mesh_processing::MeshProcessing("../data/bunny.off");
+	mesh_ = new mesh_processing::MeshProcessing("../data/max.off");
 	this->refresh_mesh();
 	this->refresh_trackball_center();
 }
@@ -468,6 +516,16 @@ void Viewer::refresh_mesh() {
 	shaderNormals_.shareAttrib(shader_, "position");
 	shaderNormals_.shareAttrib(shader_, "normal");
 
+	refresh_selection();
+}
+
+void Viewer::refresh_selection() {
+	shaderSelection_.bind();
+	Eigen::Matrix<uint32_t, Eigen::Dynamic, Eigen::Dynamic> indices = Eigen::Matrix<uint32_t, Eigen::Dynamic, Eigen::Dynamic>(1, 1);
+	indices << 0;
+	Eigen::MatrixXf selection = (*(mesh_->get_selection()));
+	shaderSelection_.uploadIndices(indices);
+	shaderSelection_.uploadAttrib("position", selection);
 }
 
 void Viewer::computeCameraMatrices(Eigen::Matrix4f &model,

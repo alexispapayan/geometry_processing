@@ -550,7 +550,7 @@ void MeshProcessing::compute_mesh_properties() {
     color_gaussian_curv_ = Eigen::MatrixXf(3, n_vertices);
     normals_ = Eigen::MatrixXf(3, n_vertices);
     points_ = Eigen::MatrixXf(3, n_vertices);
-	selection_ = Eigen::MatrixXf(3, n_vertices);
+	selection_ = Eigen::MatrixXf(3, 1);
     indices_ = MatrixXu(3, mesh_.n_faces());
 
     for(auto f: mesh_.faces()) {
@@ -570,9 +570,9 @@ void MeshProcessing::compute_mesh_properties() {
                           mesh_.position(v).y,
                           mesh_.position(v).z;
 
-		selection_.col(j) << mesh_.position(v).x,
+		/*selection_.col(j) << mesh_.position(v).x,
 							 mesh_.position(v).y,
-							 mesh_.position(v).z;
+							 mesh_.position(v).z;*/
 
         normals_.col(j) << vertex_normal[v].x,
                            vertex_normal[v].y,
@@ -653,6 +653,23 @@ Color MeshProcessing::value_to_color(Scalar value, Scalar min_value, Scalar max_
         }
     }
     return col;
+}
+
+Eigen::Vector3f MeshProcessing::get_closest_vertex(const Eigen::Vector3f & origin, const Eigen::Vector3f & direction) {
+	float min_distance = std::numeric_limits<float>::max();
+	Eigen::Vector3f closest_vertex;
+	for (auto v : mesh_.vertices()) {
+		Eigen::Vector3f point;
+		point << mesh_.position(v).x, mesh_.position(v).y, mesh_.position(v).z;
+		float projection_length = (point - origin).dot(direction);
+		Eigen::Vector3f difference = point - (origin + projection_length * direction);
+		float distance = difference.norm();
+		if (distance < min_distance) {
+			min_distance = distance;
+			closest_vertex = point;
+		}
+	}
+	return closest_vertex;
 }
 
 MeshProcessing::~MeshProcessing() {}
