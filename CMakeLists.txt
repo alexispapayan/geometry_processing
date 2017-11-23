@@ -34,3 +34,4 @@ copy_files_once(${DATA})
 # Labs and exercises
 #================================================================
 add_subdirectory(implicit_fairing)
+
