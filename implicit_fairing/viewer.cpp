@@ -1,15 +1,4 @@
-//=============================================================================
-//
-//   Code framework for the lecture
-//
-//   "Digital 3D Geometry Processing"
-//
-//   Gaspard Zoss, Alexandru Ichim
-//
-//   Copyright (C) 2016 by Computer Graphics and Geometry Laboratory,
-//         EPF Lausanne
-//
-//-----------------------------------------------------------------------------
+
 #include "viewer.h"
 
 void Viewer::select_point(const Eigen::Vector2i & pixel) {
