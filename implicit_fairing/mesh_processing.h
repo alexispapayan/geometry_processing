@@ -1,15 +1,4 @@
-//=============================================================================
-//
-//   Code framework for the lecture
-//
-//   "Digital 3D Geometry Processing"
-//
-//   Gaspard Zoss, Alexandru Ichim
-//
-//   Copyright (C) 2016 by Computer Graphics and Geometry Laboratory,
-//         EPF Lausanne
-//
-//-----------------------------------------------------------------------------
+
 #ifndef MESH_PROCESSING_H
 #define MESH_PROCESSING_H
 
